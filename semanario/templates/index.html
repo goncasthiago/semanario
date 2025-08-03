@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Semanário</title>
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'style.css' %}">
+    <style>
+        /* Corrige alinhamento dos títulos das páginas */
+        .page-title {
+            margin-top: 8px;
+            margin-left: 8px;
+            margin-bottom: 24px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #5d4037;
+            text-align: left;
+        }
+        h1 {
+            text-align: left;
+        }
+        .page-title {
+            margin-top: 8px;
+            margin-left: 8px;
+            margin-bottom: 24px;
+            font-size: 2rem;
+            font-weight: bold;
+            color: #5d4037;
+            text-align: left;
+        }
+        .relatorio-metricas {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 32px;
+            margin-bottom: 32px;
+        }
+        .relatorio-metrica {
+            background: #fffde7;
+            border-radius: 10px;
+            box-shadow: 0 1px 6px rgba(93,64,55,0.08);
+            padding: 18px 18px 8px 18px;
+            min-width: 260px;
+            flex: 1 1 260px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .relatorio-metrica h3 {
+            font-size: 1.1rem;
+            color: #7d6608;
+            margin-bottom: 10px;
+        }
+        .relatorio-metrica canvas {
+            max-width: 220px;
+            max-height: 180px;
+        }
+        /* Relatórios */
+        .relatorio-filtros {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 18px;
+            margin-bottom: 24px;
+            align-items: flex-end;
+        }
+        .relatorio-filtros label {
+            font-size: 1rem;
+            color: #7d6608;
+            margin-bottom: 2px;
+        }
+        .relatorio-filtros select, .relatorio-filtros input[type="date"] {
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ffe0b2;
+            padding: 6px 8px;
+            background: #fffde7;
+            color: #5d4037;
+        }
+        .relatorio-filtros button {
+            background: #f9e79f;
+            color: #5d4037;
+            border: none;
+            border-radius: 5px;
+            padding: 7px 18px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 2px;
+            transition: background 0.2s;
+        }
+        .relatorio-filtros button:hover {
+            background: #f8c471;
+        }
+        .relatorio-lista {
+            background: #fffde7;
+            border-radius: 10px;
+            padding: 18px 18px 8px 18px;
+            box-shadow: 0 1px 6px rgba(93,64,55,0.08);
+        }
+        .relatorio-item {
+            border-left: 5px solid #f9e79f;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            padding: 8px 12px 8px 14px;
+            font-size: 1rem;
+            color: #5d4037;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .relatorio-item.ocorrencia { border-left-color: #e74c3c; }
+        .relatorio-item.aprendizado { border-left-color: #27ae60; }
+        .relatorio-item.informacao { border-left-color: #2980b9; }
+        .relatorio-item.participacao { border-left-color: #f1c40f; }
+        .relatorio-data {
+            font-size: 0.85em;
+            color: #b7950b;
+            margin-left: 12px;
+            white-space: nowrap;
+            opacity: 0.7;
+        }
+        .modal-content-flex {
+            display: flex;
+            flex-direction: row;
+            height: 88vh;
+            min-width: 700px;
+            max-width: 1100px;
+        }
+        .modal-aluno-main {
+            flex: 1 1 340px;
+            min-width: 320px;
+            max-width: 420px;
+            padding: 32px 32px 32px 32px;
+            border-right: 2px solid #ffe0b2;
+            overflow-y: auto;
+            background: #fffde7;
+            border-radius: 14px 0 0 14px;
+            box-sizing: border-box;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            border-left: 1px solid #ffe0b2;
+            border-top: 1px solid #ffe0b2;
+            border-bottom: 1px solid #ffe0b2;
+        }
+        .modal-aluno-painel {
+            flex: 2 1 500px;
+            min-width: 340px;
+            max-width: 100%;
+            background: #fff9c4;
+            border-radius: 0 14px 14px 0;
+            padding: 24px 24px 0 24px;
+            box-shadow: 0 1px 6px rgba(93,64,55,0.08);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+            height: 100%;
+        }
+        .painel-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #7d6608;
+            margin-bottom: 10px;
+        }
+        .painel-lista {
+            flex: 1 1 auto;
+            max-height: calc(100% - 120px);
+            min-height: 80px;
+            overflow-y: auto;
+            margin-bottom: 18px;
+            background: #fffde7;
+            border-radius: 6px;
+            padding: 8px 6px 8px 6px;
+        }
+        .painel-item {
+            background: #fff;
+            border-left: 5px solid #f9e79f;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            padding: 7px 10px 7px 12px;
+            font-size: 0.98rem;
+            color: #5d4037;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .painel-data {
+            font-size: 0.85em;
+            color: #b7950b;
+            margin-left: 12px;
+            white-space: nowrap;
+            opacity: 0.7;
+        }
+        .painel-item.ocorrencia { border-left-color: #e74c3c; }
+        .painel-item.aprendizado { border-left-color: #27ae60; }
+        .painel-item.informacao { border-left-color: #2980b9; }
+        .painel-item.participacao { border-left-color: #f1c40f; }
+        .painel-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff9c4;
+            border-radius: 0 0 14px 0;
+            padding: 16px 24px 32px 24px;
+            box-shadow: 0 -2px 8px rgba(93,64,55,0.04);
+        }
+        .painel-form select, .painel-form textarea {
+            font-size: 1rem;
+            border-radius: 5px;
+            border: 1px solid #ffe0b2;
+            padding: 6px 8px;
+            background: #fffde7;
+            color: #5d4037;
+        }
+        .painel-form textarea {
+            resize: vertical;
+            min-height: 60px;
+            max-height: 160px;
+        }
+        .painel-form button {
+            background: #f9e79f;
+            color: #5d4037;
+            border: none;
+            border-radius: 5px;
+            padding: 7px 0;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 2px;
+            transition: background 0.2s;
+        }
+        .painel-form button:hover {
+            background: #f8c471;
+        }
+        body {
+            background: #f7f6f2;
+        }
+        .header {
+            background: #f9e79f;
+            color: #5d4037;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 56px;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 32px;
+            box-sizing: border-box;
+        }
+        .sidebar {
+            background: #f5cba7;
+            color: #5d4037;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            width: 220px;
+            min-height: calc(100vh - 56px);
+            box-sizing: border-box;
+            padding-top: 24px;
+            z-index: 10;
+        }
+        .sidebar a {
+            color: #5d4037;
+        }
+        .sidebar a:hover {
+            background: #f8c471;
+        }
+        .main-content {
+            background: #f7f6f2;
+            margin-left: 220px;
+            padding: 72px 32px 32px 32px;
+            min-height: calc(100vh - 56px);
+        }
+        .profile-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #ffe0b2 url('https://ui-avatars.com/api/?name=Usuário&background=f9e79f&color=5d4037') center/cover no-repeat;
+            display: inline-block;
+            cursor: pointer;
+            border: 2px solid #fff;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+        }
+        .profile-icon:hover {
+            box-shadow: 0 2px 8px rgba(93,64,55,0.18);
+        }
+        .perfil-foto {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            background: #ffe0b2 url('https://ui-avatars.com/api/?name=Usuário&background=f9e79f&color=5d4037') center/cover no-repeat;
+            display: block;
+            margin: 0 auto 18px auto;
+            border: 3px solid #f9e79f;
+        }
+        .perfil-nome {
+            text-align: center;
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #5d4037;
+            margin-bottom: 12px;
+        }
+        .aluno-tickets {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            margin-top: 24px;
+        }
+        .aluno-ticket {
+            background: #fffde7;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(93,64,55,0.08);
+            padding: 20px 28px;
+            min-width: 220px;
+            cursor: pointer;
+            transition: box-shadow 0.2s, background 0.2s;
+            border: 2px solid #ffe0b2;
+        }
+        .aluno-ticket:hover {
+            box-shadow: 0 4px 16px rgba(93,64,55,0.18);
+            background: #fff9c4;
+        }
+        .aluno-nome {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #5d4037;
+            margin-bottom: 8px;
+        }
+        .aluno-info {
+            color: #7d6608;
+            font-size: 1rem;
+        }
+        .modal-bg {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(93,64,55,0.18);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal {
+            background: #fffde7;
+            border-radius: 14px;
+            padding: 0;
+            min-width: 700px;
+            max-width: 1100px;
+            width: 80vw;
+            box-shadow: 0 6px 32px rgba(93,64,55,0.18);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .modal-close {
+            position: absolute;
+            top: 12px;
+            right: 18px;
+            font-size: 1.5rem;
+            color: #b7950b;
+            cursor: pointer;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span>Semanário</span>
+        <nav style="display: flex; align-items: center; gap: 18px;">
+            <!-- Menu superior pode ser expandido futuramente -->
+            <span class="profile-icon" title="Perfil" onclick="showPage('perfil')"></span>
+        </nav>
+    </div>
+    <div class="sidebar">
+        <ul>
+            <li><a href="#" onclick="showPage('home')">Início</a></li>
+            <li><a href="#" onclick="showPage('turmas')">Turmas</a></li>
+            <li><a href="#" onclick="showPage('alunos')">Alunos</a></li>
+            <li><a href="#" onclick="showPage('planejamento')">Planejamento de Aula</a></li>
+            <li><a href="#" onclick="showPage('atividades')">Atividades</a></li>
+            <li><a href="#" onclick="showPage('musicas')">Músicas</a></li>
+            <li><a href="#" onclick="showPage('relatorios')">Relatórios</a></li>
+        </ul>
+    </div>
+    <div class="main-content">
+        <div id="relatorios-page" style="display:none">
+            <h1 class="page-title">Relatórios</h1>
+            <form class="relatorio-filtros" onsubmit="filtrarRelatorio(event)">
+                <div>
+                    <label for="filtro-turma">Turma</label><br>
+                    <select id="filtro-turma">
+                        <option value="">Todas</option>
+                        <option value="1A">1A</option>
+                        <option value="2B">2B</option>
+                        <option value="3C">3C</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtro-aluno">Aluno</label><br>
+                    <select id="filtro-aluno">
+                        <option value="">Todos</option>
+                        <option value="Maria Clara Silva">Maria Clara Silva</option>
+                        <option value="João Pedro Souza">João Pedro Souza</option>
+                        <option value="Ana Luiza Costa">Ana Luiza Costa</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="filtro-data">Data</label><br>
+                    <input type="date" id="filtro-data">
+                </div>
+                <div>
+                    <label for="filtro-tipo">Tipo</label><br>
+                    <select id="filtro-tipo">
+                        <option value="">Todos</option>
+                        <option value="ocorrencia">Ocorrência</option>
+                        <option value="aprendizado">Aprendizado</option>
+                        <option value="informacao">Informação</option>
+                        <option value="participacao">Participação</option>
+                    </select>
+                </div>
+                <button type="submit">Filtrar</button>
+            </form>
+            <div class="relatorio-lista" id="relatorio-lista">
+                <span style="color:#b7950b;">Nenhum resultado para os filtros selecionados.</span>
+            </div>
+        </div>
+        <div id="home-page">
+            <h1 class="page-title">Semanário</h1>
+            <div class="relatorio-metricas">
+                <div class="relatorio-metrica">
+                    <h3>Quantidade de Turmas</h3>
+                    <canvas id="grafico-turmas"></canvas>
+                </div>
+                <div class="relatorio-metrica">
+                    <h3>Alunos por Turma</h3>
+                    <canvas id="grafico-alunos-turma"></canvas>
+                </div>
+                <div class="relatorio-metrica">
+                    <h3>Tipos de Ocorrência por Aluno</h3>
+                    <canvas id="grafico-tipos-aluno"></canvas>
+                </div>
+            </div>
+        </div>
+        <div id="turmas-page" style="display:none">
+            <h1 class="page-title">Turmas</h1>
+            <p>Gerencie suas turmas e inclua alunos em cada turma.</p>
+            <button onclick="alert('Funcionalidade de adicionar turma em desenvolvimento')">Adicionar Turma</button>
+            <div style="margin-top:20px;">
+                <strong>Exemplo de Turmas:</strong>
+                <ul>
+                    <li>Turma 1 (5 alunos)</li>
+                    <li>Turma 2 (8 alunos)</li>
+                </ul>
+            </div>
+        </div>
+        <div id="alunos-page" style="display:none">
+            <h1 class="page-title">Alunos</h1>
+            <div class="aluno-tickets">
+                <div class="aluno-ticket" onclick="showAlunoModal(0)">
+                    <div class="aluno-nome">Maria Clara Silva</div>
+                    <div class="aluno-info">Turma: 1A</div>
+                    <div class="aluno-info">Ano: 2025</div>
+                </div>
+                <div class="aluno-ticket" onclick="showAlunoModal(1)">
+                    <div class="aluno-nome">João Pedro Souza</div>
+                    <div class="aluno-info">Turma: 2B</div>
+                    <div class="aluno-info">Ano: 2024</div>
+                </div>
+                <div class="aluno-ticket" onclick="showAlunoModal(2)">
+                    <div class="aluno-nome">Ana Luiza Costa</div>
+                    <div class="aluno-info">Turma: 3C</div>
+                    <div class="aluno-info">Ano: 2025</div>
+                </div>
+            </div>
+            <div id="modal-bg" class="modal-bg">
+                <div class="modal" id="modal-content">
+                    <span class="modal-close" onclick="closeAlunoModal()">&times;</span>
+                    <div class="modal-content-flex">
+                        <div class="modal-aluno-main" id="modal-body"></div>
+                        <div class="modal-aluno-painel">
+                            <div class="painel-title">Informações do dia a dia</div>
+                            <div class="painel-lista" id="painel-lista"></div>
+                            <form class="painel-form" onsubmit="adicionarPainelInfo(event)">
+                                <select id="painel-tipo" required>
+                                    <option value="">Tipo de informação</option>
+                                    <option value="ocorrencia">Ocorrência</option>
+                                    <option value="aprendizado">Aprendizado</option>
+                                    <option value="informacao">Informação</option>
+                                    <option value="participacao">Participação</option>
+                                </select>
+                                <textarea id="painel-texto" placeholder="Descreva a informação..." required></textarea>
+                                <button type="submit">Adicionar</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="planejamento-page" style="display:none">
+            <h1 class="page-title">Planejamento de Aula</h1>
+            <p>Funcionalidade de planejamento em desenvolvimento.</p>
+        </div>
+        <div id="perfil-page" style="display:none">
+            <div class="perfil-foto"></div>
+            <div class="perfil-nome">Usuário Exemplo</div>
+            <div style="text-align:center; color:#34495e;">
+                <div><strong>Email:</strong> usuario@exemplo.com</div>
+                <div><strong>Função:</strong> Professor(a)</div>
+                <div><strong>Instituição:</strong> Escola Modelo</div>
+            </div>
+        </div>
+        <div id="atividades-page" style="display:none">
+            <h1 class="page-title">Atividades</h1>
+            <p>Funcionalidade de atividades em desenvolvimento.</p>
+        </div>
+        <div id="musicas-page" style="display:none">
+            <h1 class="page-title">Músicas</h1>
+            <p>Funcionalidade de músicas em desenvolvimento.</p>
+        </div>
+    </div>
+</body>
+    <script>
+        // Gráficos de métricas
+        let charts = {};
+        function renderGraficosMetricas() {
+            // Evita múltiplas inicializações
+            if (charts.turmas) { charts.turmas.destroy(); charts.turmas = null; }
+            if (charts.alunosTurma) { charts.alunosTurma.destroy(); charts.alunosTurma = null; }
+            if (charts.tiposAluno) { charts.tiposAluno.destroy(); charts.tiposAluno = null; }
+            // Quantidade de turmas
+            const turmas = ['1A', '2B', '3C'];
+            const alunosPorTurma = turmas.map(t => alunos.filter(a => a.turma === t).length);
+            // Gráfico 1: Quantidade de turmas
+            const elTurmas = document.getElementById('grafico-turmas');
+            if (elTurmas) {
+                charts.turmas = new Chart(elTurmas.getContext('2d'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: turmas,
+                        datasets: [{
+                            data: turmas.map(() => 1),
+                            backgroundColor: ['#f9e79f', '#f5cba7', '#fff9c4'],
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: true } },
+                        cutout: '70%',
+                        responsive: true,
+                        maintainAspectRatio: false
+                    }
+                });
+            }
+            // Gráfico 2: Alunos por turma
+            const elAlunosTurma = document.getElementById('grafico-alunos-turma');
+            if (elAlunosTurma) {
+                charts.alunosTurma = new Chart(elAlunosTurma.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: turmas,
+                        datasets: [{
+                            label: 'Alunos',
+                            data: alunosPorTurma,
+                            backgroundColor: ['#f9e79f', '#f5cba7', '#fff9c4'],
+                        }]
+                    },
+                    options: {
+                        plugins: { legend: { display: false } },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, precision: 0 } }
+                    }
+                });
+            }
+            // Gráfico 3: Tipos de ocorrência por aluno
+            const tipos = ['ocorrencia', 'aprendizado', 'informacao', 'participacao'];
+            const coresTipos = ['#e74c3c', '#27ae60', '#2980b9', '#f1c40f'];
+            const dadosTipos = alunos.map((a, idx) => {
+                const lista = painelInfos[idx] || [];
+                return tipos.map(tipo => lista.filter(i => i.tipo === tipo).length);
+            });
+            const elTiposAluno = document.getElementById('grafico-tipos-aluno');
+            if (elTiposAluno) {
+                charts.tiposAluno = new Chart(elTiposAluno.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: alunos.map(a => a.nome),
+                        datasets: tipos.map((tipo, i) => ({
+                            label: tipoLabel(tipo),
+                            data: dadosTipos.map(arr => arr[i]),
+                            backgroundColor: coresTipos[i],
+                        }))
+                    },
+                    options: {
+                        plugins: { legend: { display: true } },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, precision: 0 } }
+                    }
+                });
+            }
+        }
+
+        // Renderizar gráficos ao exibir a tela de início
+        document.addEventListener('DOMContentLoaded', function() {
+            renderGraficosMetricas();
+        });
+        function showPage(page) {
+            const pages = ['home', 'turmas', 'alunos', 'planejamento', 'perfil', 'atividades', 'musicas'];
+            pages.forEach(function(p) {
+                document.getElementById(p+'-page').style.display = (p === page) ? 'block' : 'none';
+            });
+            if (page === 'home') {
+                setTimeout(renderGraficosMetricas, 100); // Garante que os canvases existem
+            }
+        }
+        // Relatórios: simulação de busca dos dados do painel dos alunos
+        function filtrarRelatorio(e) {
+            e.preventDefault();
+            const turma = document.getElementById('filtro-turma').value;
+            const aluno = document.getElementById('filtro-aluno').value;
+            const data = document.getElementById('filtro-data').value;
+            const tipo = document.getElementById('filtro-tipo').value;
+            let resultados = [];
+            alunos.forEach((a, idx) => {
+                (painelInfos[idx] || []).forEach(item => {
+                    // Filtro turma
+                    if (turma && a.turma !== turma) return;
+                    // Filtro aluno
+                    if (aluno && a.nome !== aluno) return;
+                    // Filtro tipo
+                    if (tipo && item.tipo !== tipo) return;
+                    // Filtro data (apenas data, não hora)
+                    if (data && (!item.dataHora || !item.dataHora.startsWith(data.split('-').reverse().join('/').slice(0, 8)))) return;
+                    resultados.push({
+                        ...item,
+                        aluno: a.nome,
+                        turma: a.turma
+                    });
+                });
+            });
+            const lista = document.getElementById('relatorio-lista');
+            if (!lista) return;
+            if (resultados.length === 0) {
+                lista.innerHTML = '<span style="color:#b7950b;">Nenhum resultado para os filtros selecionados.</span>';
+                return;
+            }
+            lista.innerHTML = resultados.map(r =>
+                `<div class="relatorio-item ${r.tipo}">
+                    <span><strong>${tipoLabel(r.tipo)}:</strong> ${r.texto}<br>
+                    <span style='font-size:0.93em; color:#7d6608;'>Aluno: ${r.aluno} | Turma: ${r.turma}</span></span>
+                    <span class='relatorio-data'>${r.dataHora || ''}</span>
+                </div>`
+            ).join('');
+        }
+        function showPage(page) {
+            const pages = ['home', 'turmas', 'alunos', 'planejamento', 'perfil', 'atividades', 'musicas'];
+            pages.forEach(function(p) {
+                document.getElementById(p+'-page').style.display = (p === page) ? 'block' : 'none';
+            });
+        }
+
+        // Dados de exemplo dos alunos
+        const alunos = [
+            {
+                nome: 'Maria Clara Silva',
+                turma: '1A',
+                ano: '2025',
+                nascimento: '10/03/2015',
+                responsavel: 'Paulo Silva',
+                contato: '(11) 99999-1111',
+                endereco: 'Rua das Flores, 123',
+                observacoes: 'Alérgica a lactose.'
+            },
+            {
+                nome: 'João Pedro Souza',
+                turma: '2B',
+                ano: '2024',
+                nascimento: '22/07/2014',
+                responsavel: 'Carla Souza',
+                contato: '(11) 98888-2222',
+                endereco: 'Av. Brasil, 456',
+                observacoes: 'Necessita acompanhamento pedagógico.'
+            },
+            {
+                nome: 'Ana Luiza Costa',
+                turma: '3C',
+                ano: '2025',
+                nascimento: '05/12/2015',
+                responsavel: 'Marina Costa',
+                contato: '(11) 97777-3333',
+                endereco: 'Praça Central, 789',
+                observacoes: 'Ótimo desempenho em música.'
+            }
+        ];
+
+        // Armazenar informações do painel por aluno (index)
+        let painelInfos = [[], [], []];
+
+        function showAlunoModal(idx) {
+            const aluno = alunos[idx];
+            let html = `<h2 style='margin-top:0;'>${aluno.nome}</h2>`;
+            html += `<div><strong>Turma:</strong> ${aluno.turma}</div>`;
+            html += `<div><strong>Ano:</strong> ${aluno.ano}</div>`;
+            html += `<div><strong>Nascimento:</strong> ${aluno.nascimento}</div>`;
+            html += `<div><strong>Responsável:</strong> ${aluno.responsavel}</div>`;
+            html += `<div><strong>Contato:</strong> ${aluno.contato}</div>`;
+            html += `<div><strong>Endereço:</strong> ${aluno.endereco}</div>`;
+            html += `<div><strong>Observações:</strong> ${aluno.observacoes}</div>`;
+            document.getElementById('modal-body').innerHTML = html;
+            document.getElementById('modal-bg').style.display = 'flex';
+            // Salvar idx do aluno aberto
+            document.getElementById('modal-bg').setAttribute('data-aluno-idx', idx);
+            renderPainelLista(idx);
+        }
+
+        function renderPainelLista(idx) {
+            const lista = painelInfos[idx] || [];
+            const painel = document.getElementById('painel-lista');
+            if (!painel) return;
+            painel.innerHTML = lista.length === 0 ? '<span style="color:#b7950b;">Nenhuma informação adicionada ainda.</span>' :
+                lista.map(item => `<div class="painel-item ${item.tipo}"><span><strong>${tipoLabel(item.tipo)}:</strong> ${item.texto}</span><span class='painel-data'>${item.dataHora || ''}</span></div>`).join('');
+        }
+
+        function tipoLabel(tipo) {
+            switch(tipo) {
+                case 'ocorrencia': return 'Ocorrência';
+                case 'aprendizado': return 'Aprendizado';
+                case 'informacao': return 'Informação';
+                case 'participacao': return 'Participação';
+                default: return '';
+            }
+        }
+
+        function adicionarPainelInfo(e) {
+            e.preventDefault();
+            const idx = parseInt(document.getElementById('modal-bg').getAttribute('data-aluno-idx'));
+            const tipo = document.getElementById('painel-tipo').value;
+            const texto = document.getElementById('painel-texto').value.trim();
+            if (!tipo || !texto) return;
+            const agora = new Date();
+            const dataHora = agora.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit' }) + ' ' + agora.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            painelInfos[idx] = painelInfos[idx] || [];
+            painelInfos[idx].unshift({ tipo, texto, dataHora });
+            renderPainelLista(idx);
+            document.getElementById('painel-tipo').value = '';
+            document.getElementById('painel-texto').value = '';
+        }
+        function closeAlunoModal() {
+            document.getElementById('modal-bg').style.display = 'none';
+        }
+        // Fechar modal ao clicar fora
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('modal-bg').addEventListener('click', function(e) {
+                if (e.target === this) closeAlunoModal();
+            });
+        });
+    </script>
+</body>
+</html>

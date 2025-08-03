@@ -55,7 +55,7 @@ ROOT_URLCONF = "pedagogIA.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": ['templates'],
+        "DIRS": [BASE_DIR / "semanario" / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -116,7 +116,11 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-STATIC_URL = "static/"
+
+STATIC_URL = "/static/"
+STATICFILES_DIRS = [
+    BASE_DIR / "static",
+]
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -125,7 +129,8 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # default static files settings for PythonAnywhere.
 # see https://help.pythonanywhere.com/pages/DjangoStaticFiles for more info
-MEDIA_ROOT = '/home/thiagodebia/pedagogIA/media'
-MEDIA_URL = '/media/'
-STATIC_ROOT = '/home/thiagodebia/pedagogIA/static'
-STATIC_URL = '/static/'
+# Use as linhas abaixo apenas em produção na PythonAnywhere
+# MEDIA_ROOT = '/home/thiagodebia/pedagogIA/media'
+# MEDIA_URL = '/media/'
+# STATIC_ROOT = '/home/thiagodebia/pedagogIA/static'
+# STATIC_URL = '/static/'
